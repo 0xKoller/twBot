@@ -2,6 +2,9 @@ import { CronJob, job } from "cron";
 import rwClient from "./twitterClient.js";
 import fetch from "node-fetch";
 
+let dolar;
+let message;
+
 const possitiveMessages = [
   "sos el guru del mercado",
   "te levantas a analizar el mercado no?",
@@ -19,9 +22,6 @@ const negativeMessages = [
   "Ya volvera a bajar...",
 ];
 
-let dolar;
-let message;
-
 const value = async () => {
   try {
     const res = await fetch(
@@ -29,11 +29,22 @@ const value = async () => {
     );
     const datos = await res.json();
     const casa = datos["1"]["casa"];
-    dolar = {
-      nombre: casa["nombre"],
-      venta: parseFloat(casa["venta"]),
-      variacion: parseFloat(casa["variacion"].replace(",", ".")),
-    };
+    const newValue = parseFloat(casa["venta"]);
+    if (newValue !== dolar.venta) {
+      dolar = {
+        nombre: casa["nombre"],
+        venta: parseFloat(casa["venta"]),
+        variacion: parseFloat(casa["variacion"].replace(",", ".")),
+        changed: true,
+      };
+    } else {
+      dolar = {
+        nombre: dolar.nombre,
+        venta: dolar.venta,
+        variacion: dolar.variacion,
+        changed: false,
+      };
+    }
   } catch (err) {
     console.log(err);
   }
@@ -41,6 +52,7 @@ const value = async () => {
 
 const tweet = async (momento) => {
   try {
+    console.log(rwClient);
     await rwClient.v1.tweet(momento);
   } catch (error) {
     console.log(error);
@@ -58,6 +70,28 @@ const tweetApi = async () => {
   }
 };
 
+function valores() {
+  value().then(() => {
+    if (dolar.chaged) {
+      let answer = dolar["variacion"];
+      if (answer > 0) {
+        message = `El dolar blue subio a $${dolar.venta}, ${
+          negativeMessages[Math.floor(Math.random() * negativeMessages.length)]
+        }`;
+      } else {
+        message = `El dolar blue bajo a $${dolar.venta}, ${
+          possitiveMessages[
+            Math.floor(Math.random() * possitiveMessages.length)
+          ]
+        }`;
+      }
+      return message;
+    } else {
+      return `El ${dolar.nombre} sigue valiendo $${dolar.venta}.`;
+    }
+  });
+}
+
 const jobDaily = new CronJob(
   "0 9 * * 1-5",
   tweet("maniana"),
@@ -69,8 +103,7 @@ const jobDaily = new CronJob(
 const jobDiario = new CronJob(
   "0 10-16 * * 1-5",
   function () {
-    const hora = new Date();
-    tweet(`${hora.getHours()}:${hora.getMinutes()}`);
+    tweet(valores());
   },
   null,
   null,
@@ -101,37 +134,4 @@ jobDiario.start();
 jobFinish.start();
 jobTest.start();
 
-// const doMagic = (valor) => {
-//   console.log("hola", valor);
-//   let valorActual = valor.venta;
-//   let valorAnterior = 0;
-//   if (valor.variacion < 0) valorAnterior = 0;
-// };
-
-// function valores() {
-//   value().then(() => {
-//     let answer = dolar["variacion"];
-//     if (answer > 0) {
-//       message = `El dolar blue subio a $${dolar.venta}, ${
-//         negativeMessages[Math.floor(Math.random() * negativeMessages.length)]
-//       }`;
-//     } else {
-//       message = `El dolar blue bajo a $${dolar.venta}, ${
-//         possitiveMessages[Math.floor(Math.random() * possitiveMessages.length)]
-//       }`;
-//     }
-//     console.log(message);
-//   });
-// }
-
-// var nextDate = new Date();
-// console.log("Entro acaaa");
-// nextDate.setHours(nextDate.getHours());
-// nextDate.setMinutes(nextDate.getMinutes() + 1);
-// nextDate.setSeconds(nextDate.getSeconds()); // I wouldn't do milliseconds too ;)
-// console.log(nextDate);
-// var difference = nextDate - new Date();
-// console.log(difference);
-// setInterval(valores, difference);
-
-// tweetApi();
+console.log(rwClient);
