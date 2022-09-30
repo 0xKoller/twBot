@@ -1,7 +1,6 @@
-//github.com/plhery/node-twitter-api-v2/blob/HEAD/doc/examples.md
-
+import { CronJob, job } from "cron";
 import rwClient from "./twitterClient.js";
-import { CronJob } from "cron";
+import fetch from "node-fetch";
 
 const possitiveMessages = [
   "sos el guru del mercado",
@@ -20,38 +19,87 @@ const negativeMessages = [
   "Ya volvera a bajar...",
 ];
 
-const tweet = async () => {
+let dolar;
+let message;
+
+const value = async () => {
   try {
-    await rwClient.v1.tweet("Hola");
+    const res = await fetch(
+      "https://www.dolarsi.com/api/api.php?type=valoresprincipales"
+    );
+    const datos = await res.json();
+    const casa = datos["1"]["casa"];
+    dolar = {
+      nombre: casa["nombre"],
+      venta: parseFloat(casa["venta"]),
+      variacion: parseFloat(casa["variacion"].replace(",", ".")),
+    };
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+const tweet = async (momento) => {
+  try {
+    await rwClient.v1.tweet(momento);
   } catch (error) {
     console.log(error);
   }
 };
-const jobDaily = new CronJob("0 9 * * 1-5");
 
-const jobDiario = new CronJob("0 10-16 * * 1-5");
+const tweetApi = async () => {
+  try {
+    await value();
+    await rwClient.v1.tweet(
+      `El ${dolar.nombre}, se encuentra en $${dolar.venta}`
+    );
+  } catch (e) {
+    console.log(e);
+  }
+};
 
-const jobFinish = new CronJob("0 17 * * 1-5");
+const jobDaily = new CronJob(
+  "0 9 * * 1-5",
+  tweet("maniana"),
+  null,
+  null,
+  "America/Argentina/Buenos_Aires"
+);
 
-// let dolar;
-// let message;
+const jobDiario = new CronJob(
+  "0 10-16 * * 1-5",
+  function () {
+    const hora = new Date();
+    tweet(`${hora.getHours()}:${hora.getMinutes()}`);
+  },
+  null,
+  null,
+  "America/Argentina/Buenos_Aires"
+);
 
-// const value = async () => {
-//   try {
-//     const res = await fetch(
-//       "https://www.dolarsi.com/api/api.php?type=valoresprincipales"
-//     );
-//     const datos = await res.json();
-//     const casa = datos["1"]["casa"];
-//     dolar = {
-//       nombre: casa["nombre"],
-//       venta: parseFloat(casa["venta"]),
-//       variacion: parseFloat(casa["variacion"].replace(",", ".")),
-//     };
-//   } catch (err) {
-//     console.log(err);
-//   }
-// };
+const jobFinish = new CronJob(
+  "0 17 * * 1-5",
+  tweet("final"),
+  null,
+  null,
+  "America/Argentina/Buenos_Aires"
+);
+
+const jobTest = new CronJob(
+  "* * * * *",
+  function () {
+    const hora = new Date();
+    tweet(`${hora.getHours()}:${hora.getMinutes()}`);
+  },
+  null,
+  null,
+  "America/Argentina/Buenos_Aires"
+);
+
+jobDaily.start();
+jobDiario.start();
+jobFinish.start();
+jobTest.start();
 
 // const doMagic = (valor) => {
 //   console.log("hola", valor);
@@ -85,3 +133,5 @@ const jobFinish = new CronJob("0 17 * * 1-5");
 // var difference = nextDate - new Date();
 // console.log(difference);
 // setInterval(valores, difference);
+
+// tweetApi();
