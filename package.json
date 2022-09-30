@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "cron": "^2.1.0",
+    "twitter-api-v2": "^1.12.7"
+  },
+  "name": "tuvequecomprarono",
+  "version": "1.0.0",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
