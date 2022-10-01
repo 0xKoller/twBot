@@ -1,4 +1,4 @@
-import { CronJob, job } from "cron";
+import { CronJob } from "cron";
 import rwClient from "./twitterClient.js";
 import fetch from "node-fetch";
 
@@ -59,17 +59,6 @@ const tweet = async (momento) => {
   }
 };
 
-const tweetApi = async () => {
-  try {
-    await value();
-    await rwClient.v1.tweet(
-      `El ${dolar.nombre}, se encuentra en $${dolar.venta}`
-    );
-  } catch (e) {
-    console.log(e);
-  }
-};
-
 function valores() {
   value().then(() => {
     if (dolar.chaged) {
@@ -118,20 +107,6 @@ const jobFinish = new CronJob(
   "America/Argentina/Buenos_Aires"
 );
 
-const jobTest = new CronJob(
-  "* * * * *",
-  function () {
-    const hora = new Date();
-    tweet(`${hora.getHours()}:${hora.getMinutes()}`);
-  },
-  null,
-  null,
-  "America/Argentina/Buenos_Aires"
-);
-
 jobDaily.start();
 jobDiario.start();
 jobFinish.start();
-jobTest.start();
-
-console.log(rwClient);
